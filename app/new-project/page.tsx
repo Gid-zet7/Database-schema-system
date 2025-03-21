@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { getUsersession } from "@/lib/actions";
 import { Send } from "lucide-react";
@@ -20,7 +20,8 @@ interface Session {
   picture?: string;
 }
 
-export default function NewProject() {
+// Create a separate client component for the main content
+function NewProjectContent() {
   const [session, setSession] = useState<Session | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -364,5 +365,22 @@ export default function NewProject() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function NewProject() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-white flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      }
+    >
+      <NewProjectContent />
+    </Suspense>
   );
 }
