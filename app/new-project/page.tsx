@@ -13,8 +13,15 @@ interface Message {
   type?: "response" | "question";
 }
 
+interface Session {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  picture?: string;
+}
+
 export default function NewProject() {
-  const [session, setSession] = useState();
+  const [session, setSession] = useState<Session | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);

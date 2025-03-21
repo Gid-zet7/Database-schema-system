@@ -1,22 +1,14 @@
 import { NextResponse } from "next/server";
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import clientPromise from "@/lib/mongodb";
-import { ObjectId, WithId, Document } from "mongodb";
-
-interface Schema extends Document {
-  _id: ObjectId;
-  schema: any;
-  messages: any[];
-  userEmail: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { ObjectId } from "mongodb";
 
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = await params;
     const { getUser } = getKindeServerSession();
     const user = await getUser();
 
@@ -27,10 +19,9 @@ export async function GET(
     const client = await clientPromise;
     const db = client.db("schemas");
 
-    const schema = await db.collection("schemas").findOne({
-      _id: new ObjectId(params.id),
-      userEmail: user.email,
-    });
+    const schema = await db
+      .collection("schemas")
+      .findOne({ _id: new ObjectId(id) });
 
     if (!schema) {
       return NextResponse.json({ error: "Schema not found" }, { status: 404 });
@@ -39,10 +30,9 @@ export async function GET(
     return NextResponse.json(schema);
   } catch (error) {
     console.error("Failed to fetch schema:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch schema" },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to fetch schema";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -51,6 +41,7 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const { id } = await params;
     const { getUser } = getKindeServerSession();
     const user = await getUser();
 
@@ -61,40 +52,25 @@ export async function PUT(
     const client = await clientPromise;
     const db = client.db("schemas");
 
-    // First find the existing document to ensure it belongs to the user
-    const existingSchema = await db.collection("schemas").findOne({
-      _id: new ObjectId(params.id),
-      userEmail: user.email,
-    });
+    const { schema, messages, name } = await request.json();
 
-    if (!existingSchema) {
+    const result = await db.collection("schemas").updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          schema: schema || {},
+          messages: messages || [],
+          name: name || "Untitled Project",
+          updatedAt: new Date(),
+        },
+      }
+    );
+
+    if (result.matchedCount === 0) {
       return NextResponse.json({ error: "Schema not found" }, { status: 404 });
     }
 
-    const { schema, messages } = await request.json();
-
-    const updateData = {
-      $set: {
-        schema: schema || existingSchema.schema,
-        messages: messages || existingSchema.messages,
-        updatedAt: new Date(),
-      },
-    };
-
-    const result = await db
-      .collection("schemas")
-      .findOneAndUpdate({ _id: new ObjectId(params.id) }, updateData, {
-        returnDocument: "after",
-      });
-
-    if (!result) {
-      return NextResponse.json(
-        { error: "Failed to update schema" },
-        { status: 500 }
-      );
-    }
-
-    return NextResponse.json(result);
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Failed to update schema:", error);
     const message =

@@ -1,11 +1,9 @@
 "use client";
 
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getUsersession } from "@/lib/actions";
-import Image from "next/image";
 import Link from "next/link";
 import { LogoutLink, LoginLink } from "@kinde-oss/kinde-auth-nextjs/components";
-import { Menu, Transition } from "@headlessui/react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,18 +15,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-interface MenuItemProps {
-  active: boolean;
-}
-
 interface Project {
   _id: string;
   name: string;
   updatedAt: string;
 }
 
+interface Session {
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  picture?: string;
+  preferred_email?: string;
+}
+
 export default function Navbar() {
-  const [session, setSession] = useState();
+  const [session, setSession] = useState<Session | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
 
   useEffect(() => {
@@ -82,7 +84,8 @@ export default function Navbar() {
                   <Avatar className="w-8 h-8">
                     <AvatarImage src={`${session?.picture}`} alt="profile" />
                     <AvatarFallback>
-                      {session?.first_name[0]} {session?.last_name[0]}
+                      {session?.first_name?.[0] || ""}{" "}
+                      {session?.last_name?.[0] || ""}
                     </AvatarFallback>
                   </Avatar>
                 </DropdownMenuTrigger>
@@ -105,9 +108,6 @@ export default function Navbar() {
                     </Link>
                   </DropdownMenuItem>
 
-                  {/* <DropdownMenuItem>Billing</DropdownMenuItem>
-            <DropdownMenuItem>Team</DropdownMenuItem>
-            <DropdownMenuItem>Subscription</DropdownMenuItem> */}
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
                     <LogoutLink>Log out</LogoutLink>

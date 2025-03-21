@@ -14,12 +14,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+  type?: "response" | "question";
+}
+
 interface Schema {
+  _id: string;
   schema: any;
-  messages: Array<{
-    role: "user" | "assistant";
-    content: string;
-  }>;
+  messages: Message[];
   createdAt: string;
   updatedAt: string;
 }
@@ -215,9 +219,26 @@ export default function ProjectPage() {
           throw new Error("Failed to fetch schema");
         }
         const schemaData = await schemaResponse.json();
-        // console.log(schemaData);
-        setSchema(schemaData);
-        // setEditedSchema(schemaData.schema);
+
+        // Create a properly typed schema object
+        const typedSchema: Schema = {
+          _id: schemaData._id,
+          schema: schemaData.schema,
+          messages: (schemaData.messages || []).map(
+            (msg: any): Message => ({
+              role: msg.role as "user" | "assistant",
+              content: String(msg.content),
+              type:
+                msg.type === "response" || msg.type === "question"
+                  ? msg.type
+                  : undefined,
+            })
+          ),
+          createdAt: schemaData.createdAt,
+          updatedAt: schemaData.updatedAt,
+        };
+
+        setSchema(typedSchema);
       } catch (err) {
         setError(err instanceof Error ? err.message : "An error occurred");
       } finally {
@@ -232,8 +253,10 @@ export default function ProjectPage() {
     e.preventDefault();
     if (!input.trim() || !schema) return;
 
-    const userMessage = { role: "user" as const, content: input };
-    const updatedMessages = [...schema.messages, userMessage];
+    const userMessage: Message = { role: "user", content: input };
+    const updatedMessages: Message[] = [...schema.messages, userMessage];
+
+    // Update schema state immediately with user message
     setSchema((prev) => (prev ? { ...prev, messages: updatedMessages } : null));
     setInput("");
     setIsLoading(true);
@@ -250,17 +273,15 @@ export default function ProjectPage() {
       });
 
       const data = await response.json();
-      // console.log(data.schema);
-      // console.log(data.content);
 
-      const assistantMessage = {
-        role: "assistant" as const,
+      const assistantMessage: Message = {
+        role: "assistant",
         content: data.content,
         type: data.schema ? "response" : "question",
       };
 
-      // Update schema with the new message
-      const updatedSchema = {
+      // Update schema with the new message immediately
+      const updatedSchema: Schema = {
         ...schema,
         messages: [...updatedMessages, assistantMessage],
       };
@@ -282,8 +303,7 @@ export default function ProjectPage() {
         throw new Error("Failed to update project");
       }
 
-      const projectData = await projectResponse.json();
-      setSchema(projectData);
+      // No need to update schema again with projectData since we already updated it
     } catch (error) {
       console.error("Error:", error);
       setError(
@@ -394,9 +414,9 @@ export default function ProjectPage() {
                 Conversation History
               </h3>
               <div className="space-y-4">
-                {schema.messages.map((message, index) =>
+                {schema?.messages?.map((message, index) =>
                   renderMessage(message, index)
-                )}
+                ) || []}
                 {isLoading && (
                   <div className="bg-white border border-gray-200 mr-4 sm:mr-12 p-2 sm:p-4 rounded-lg animate-chat-bubble">
                     <p className="text-gray-800 text-sm sm:text-base">
@@ -454,8 +474,18 @@ export default function ProjectPage() {
             </div> */}
 
             <div className="mt-6 text-sm text-gray-500">
-              <p>Created: {new Date(schema.createdAt).toLocaleString()}</p>
-              <p>Last updated: {new Date(schema.updatedAt).toLocaleString()}</p>
+              <p>
+                Created:{" "}
+                {schema?.createdAt
+                  ? new Date(schema.createdAt).toLocaleString()
+                  : "N/A"}
+              </p>
+              <p>
+                Last updated:{" "}
+                {schema?.updatedAt
+                  ? new Date(schema.updatedAt).toLocaleString()
+                  : "N/A"}
+              </p>
             </div>
           </div>
         </div>
