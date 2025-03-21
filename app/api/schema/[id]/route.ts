@@ -94,12 +94,11 @@ export async function PUT(
       );
     }
 
-    return NextResponse.json(result as WithId<Schema>);
+    return NextResponse.json(result);
   } catch (error) {
     console.error("Failed to update schema:", error);
-    return NextResponse.json(
-      { error: "Failed to update schema" },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to update schema";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

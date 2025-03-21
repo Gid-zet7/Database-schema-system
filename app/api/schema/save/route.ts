@@ -33,9 +33,8 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("Failed to save schema:", error);
-    return NextResponse.json(
-      { error: "Failed to save schema" },
-      { status: 500 }
-    );
+    const message =
+      error instanceof Error ? error.message : "Failed to save schema";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

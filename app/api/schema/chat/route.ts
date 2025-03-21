@@ -27,27 +27,9 @@ Keep responses short and direct.
 Continue asking relevant questions and wait for user input.
 Maintain a natural conversational tone (e.g., "Got it, let's start with...").`;
 
-function splitSqlAndText(content: string) {
-  const sqlRegex = /```(?:sql)?\s*([\s\S]*?)\s*```/;
-
-  const sqlMatch = content.match(sqlRegex);
-
-  if (sqlMatch) {
-    const sqlPart = sqlMatch[1];
-    const textPart = content.split(sqlMatch[0])[1]?.trim() || "";
-    return {
-      sql: sqlPart,
-      text: textPart,
-    };
-  }
-
-  return { sql: null, text: content };
-}
-
 export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
-    console.log(messages);
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4-turbo-preview",
@@ -68,10 +50,9 @@ export async function POST(req: Request) {
       parsedResponse = JSON.parse(response);
       console.log(parsedResponse);
     } catch (e) {
-      const { sql, text } = splitSqlAndText(response);
       parsedResponse = {
-        schema: sql,
-        text: text,
+        content: response,
+        schema: null,
       };
     }
 
