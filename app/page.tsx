@@ -64,7 +64,7 @@ export default function Home() {
           <Link href="/new-project">
             <Button
               size="lg"
-              className="bg-black hover:bg-slate-900 cursor-pointer"
+              className="bg-black hover:bg-slate-900 cursor-pointer text-white"
             >
               Create New Project
             </Button>
